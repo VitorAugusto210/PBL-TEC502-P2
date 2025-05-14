@@ -1,0 +1,12 @@
+services:
+  broker:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+
+  carro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - broker
