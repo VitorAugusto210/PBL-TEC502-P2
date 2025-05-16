@@ -23,7 +23,12 @@ def publicar_status(client):
         time.sleep(5)
 
 if __name__ == "__main__":
+    time.sleep(10)  # espera o broker iniciar
     client = mqtt.Client()
-    client.connect(BROKER, 1883, 60)
+    try:
+        client.connect(BROKER, 1883, 60)
+    except Exception as e:
+        print(f"Erro ao conectar no broker: {e}")
+        exit(1)
     client.loop_start()
     publicar_status(client)

@@ -46,7 +46,11 @@ services:
     image: eclipse-mosquitto
     container_name: broker_mqtt
     ports:
-      - "1883:1883"
+      - "1884:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
 
   carro1:
     build:

@@ -1,16 +1,51 @@
-from fastapi import FastAPI
-from routers import reserva
-from empresa import Empresa
-import json 
-import os 
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Dict
+import httpx
 
 app = FastAPI()
 
-nome        = os.getenv("EMPRESA_NOME", "Empresa Default")
-cidade      = os.getenv("EMPRESA_LOCAL", "Cidade X")
-pontos_json = os.getenv("EMPRESA_PONTOS", '[]')         
-pontos      = json.loads(pontos_json)
+EMPRESA_NOME = "Empresa A"
+EMPRESA_LOCAL = "João Pessoa"
+EMPRESA_PONTOS = ["JP1", "MC1"]
 
-empresa = Empresa(nome=nome, localizacao=cidade, pontos=pontos)
-reserva.set_empresa(empresa)
-app.include_router(reserva.router)
+pontos: Dict[str, Dict] = {
+    ponto: {"reservado": False, "carro": None} for ponto in EMPRESA_PONTOS
+}
+
+class ReservaRequest(BaseModel):
+    ponto: str
+    carro_id: str
+
+@app.get("/pontos")
+def listar_pontos():
+    return {
+        "empresa": EMPRESA_NOME,
+        "local": EMPRESA_LOCAL,
+        "pontos": pontos
+    }
+
+@app.post("/reserva")
+def reservar_ponto(req: ReservaRequest):
+    if req.ponto not in pontos:
+        raise HTTPException(status_code=404, detail="Ponto não encontrado")
+
+    if pontos[req.ponto]["reservado"]:
+        raise HTTPException(status_code=400, detail="Ponto já reservado")
+
+    pontos[req.ponto] = {"reservado": True, "carro": req.carro_id}
+    return {"mensagem": f"Ponto {req.ponto} reservado com sucesso para {req.carro_id}"}
+
+@app.post("/cancelar_reserva")
+def cancelar_reserva(req: ReservaRequest):
+    if req.ponto not in pontos:
+        raise HTTPException(status_code=404, detail="Ponto não encontrado")
+
+    if not pontos[req.ponto]["reservado"]:
+        raise HTTPException(status_code=400, detail="Ponto já está livre")
+
+    if pontos[req.ponto]["carro"] != req.carro_id:
+        raise HTTPException(status_code=403, detail="Reserva feita por outro carro")
+
+    pontos[req.ponto] = {"reservado": False, "carro": None}
+    return {"mensagem": f"Reserva cancelada para ponto {req.ponto}"}
