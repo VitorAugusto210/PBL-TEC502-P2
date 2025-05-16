@@ -1,9 +1,40 @@
 version: '3.9'
 services:
   empresa_a:
-    build: .
+    build:
+      context: ./empresa_a
     container_name: empresa_a
     ports:
       - "8000:8000"
     volumes:
-      - ./app:/app
+      - ./empresa_a:/app
+  empresa_b:
+    build:
+      context: ./empresa_b
+    container_name: empresa_b
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./empresa_b:/app
+  empresa_c:
+    build:
+      context: ./empresa_c
+    container_name: empresa_c
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./empresa_c:/app
+  broker_mqtt:
+    image: eclipse-mosquitto
+    container_name: broker_mqtt
+    ports:
+      - "1883:1883"
+
+  carro1:
+    build:
+      context: ./carro
+    container_name: carro1
+    depends_on:
+      - broker_mqtt
+    environment:
+      - PYTHONUNBUFFERED=1
