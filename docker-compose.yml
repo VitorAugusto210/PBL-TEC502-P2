@@ -1,13 +1,21 @@
 version: '3.9'
 services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    ports: ["1883:1883"]
+
   empresa_a:
     build:
       context: ./empresa_a
     container_name: empresa_a
-    ports:
-      - "8000:8000"
+    ports: ["8000:8000"]
     volumes:
       - ./empresa_a:/app
+    environment:
+      - EMPRESA_NOME=Empresa A 
+      - EMPRESA_LOCAL=João Pessoa
+      - EMPRESA_PONTOS=["JP1", "MC1"]
+
   empresa_b:
     build:
       context: ./empresa_b
@@ -16,6 +24,11 @@ services:
       - "8001:8000"
     volumes:
       - ./empresa_b:/app
+    environment:
+      - EMPRESA_NOME=Empresa B 
+      - EMPRESA_LOCAL=Maceió
+      - EMPRESA_PONTOS=["MC2", "SE1"]
+
   empresa_c:
     build:
       context: ./empresa_c
@@ -24,6 +37,11 @@ services:
       - "8002:8000"
     volumes:
       - ./empresa_c:/app
+    environment:
+      - EMPRESA_NOME=Empresa C 
+      - EMPRESA_LOCAL=Sergipe
+      - EMPRESA_PONTOS=["SE2", "FS1"]
+
   broker_mqtt:
     image: eclipse-mosquitto
     container_name: broker_mqtt
