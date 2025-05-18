@@ -73,3 +73,11 @@ def reservar_rota(reqs: list[ReservaRequest]):
             })
         return {"erro": "Reserva falhou, rollback executado", "detalhes": str(e)}
 
+
+@router.post("/cancelar")
+def cancelar_reserva(req: CancelarRequest):
+    return empresa.cancelar_reserva(req.carro_id, req.ponto_id)
+
+@router.post("/disponibilidade")
+def consultar_disponibilidade(req: DisponibilidadeRequest):
+    return empresa.verificar_disponibilidade(req.ponto_id, req.janela_inicio, req.janela_fim)

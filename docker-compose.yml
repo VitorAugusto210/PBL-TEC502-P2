@@ -1,20 +1,32 @@
 version: '3.9'
+
 services:
   mosquitto:
     image: eclipse-mosquitto:latest
-    ports: ["1883:1883"]
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - rede_eletrica
 
   empresa_a:
     build:
       context: ./empresa_a
     container_name: empresa_a
-    ports: ["8000:8000"]
+    ports:
+      - "8000:8000"
     volumes:
       - ./empresa_a:/app
     environment:
-      - EMPRESA_NOME=Empresa A 
+      - EMPRESA_NOME=Empresa A
       - EMPRESA_LOCAL=João Pessoa
       - EMPRESA_PONTOS=["JP1", "MC1"]
+    networks:
+      - rede_eletrica
 
   empresa_b:
     build:
@@ -25,9 +37,11 @@ services:
     volumes:
       - ./empresa_b:/app
     environment:
-      - EMPRESA_NOME=Empresa B 
+      - EMPRESA_NOME=Empresa B
       - EMPRESA_LOCAL=Maceió
       - EMPRESA_PONTOS=["MC2", "SE1"]
+    networks:
+      - rede_eletrica
 
   empresa_c:
     build:
@@ -38,25 +52,42 @@ services:
     volumes:
       - ./empresa_c:/app
     environment:
-      - EMPRESA_NOME=Empresa C 
+      - EMPRESA_NOME=Empresa C
       - EMPRESA_LOCAL=Sergipe
       - EMPRESA_PONTOS=["SE2", "FS1"]
-
-  broker_mqtt:
-    image: eclipse-mosquitto
-    container_name: broker_mqtt
-    ports:
-      - "1884:1883"
-    volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - rede_eletrica
 
   carro1:
     build:
       context: ./carro
     container_name: carro1
     depends_on:
-      - broker_mqtt
+      - empresa_a
+      - empresa_b
+      - empresa_c
+      - mosquitto
     environment:
       - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+    networks:
+      - rede_eletrica
+
+  simulador:
+    build:
+      context: ./carro
+    container_name: simulador
+    depends_on:
+      - empresa_a
+      - empresa_b
+      - empresa_c
+      - mosquitto
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python simulador_carros.py
+    networks:
+      - rede_eletrica
+
+networks:
+  rede_eletrica:
