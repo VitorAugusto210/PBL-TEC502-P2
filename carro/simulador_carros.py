@@ -3,7 +3,7 @@ import string
 import time
 import requests
 from datetime import datetime
-from carro import gerar_rota, CAPITAIS_BRASIL  # importar sua base e função
+from gerar_rota import gerar_rota_autonoma, CAPITAIS_BRASIL  # importar sua base e função
 
 def gerar_id_carro():
     return "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
@@ -19,7 +19,7 @@ def simular_carro():
     print(f"\n🚗 {carro_id} vai de {origem} para {destino}")
 
     try:
-        rota_json, empresa_origem = gerar_rota(origem, destino, carro_id)
+        rota_json, empresa_origem = gerar_rota_autonoma(origem, destino, carro_id)
         url_rota = f"http://{empresa_origem}:8000/rota"
         response = requests.post(url_rota, json=rota_json)
 

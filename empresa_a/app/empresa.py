@@ -1,7 +1,8 @@
 class Empresa:
-    def __init__(self, nome, localizacao):
+    def __init__(self, nome, localizacao, pontos):
         self.nome = nome
         self.localizacao = localizacao
+        self.pontos = pontos
         self.reservas = []
 
     def reservar_ponto(self, carro_id, ponto_id, janela_inicio, janela_fim):
