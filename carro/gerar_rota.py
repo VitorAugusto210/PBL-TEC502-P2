@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from geopy.distance import geodesic
+import json
 
 # geolocalizacao de capitais com empresa e pontos associados a ela
 CAPITAIS_BRASIL = [
@@ -73,5 +74,7 @@ def gerar_rota_autonoma(origem_nome, destino_nome, carro_id="carro123", bateria_
         "janela_inicio": janela_inicio.isoformat(),
         "janela_fim": janela_fim.isoformat()
     })
+    print("📦 Rota gerada:")
+    print(json.dumps(rota, indent=2))
 
     return rota, origem["empresa"]

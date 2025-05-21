@@ -10,10 +10,6 @@ def set_empresa(e):
     global empresa
     empresa = e
 
-class EscolherRotaRequest(BaseModel):
-    rotas: list[list[dict]]
-    indice: int
-
 class RotasRequest(BaseModel):
     origem: str
     destino: str

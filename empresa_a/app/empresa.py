@@ -6,6 +6,13 @@ class Empresa:
         self.reservas = []
 
     def reservar_ponto(self, carro_id, ponto_id, janela_inicio, janela_fim):
+        disponibilidade = self.verificar_disponibilidade(ponto_id, janela_inicio, janela_fim)
+        if not disponibilidade["disponivel"]:
+            return {
+                "erro": "Ponto indisponível",
+                "mensagem": disponibilidade["mensagem"]
+            }
+
         reserva = {
             "carro_id": carro_id,
             "ponto_id": ponto_id,
