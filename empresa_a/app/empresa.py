@@ -33,3 +33,4 @@ class Empresa:
                 if not (janela_fim <= r["janela_inicio"] or janela_inicio >= r["janela_fim"]):
                     return {"disponivel": False, "mensagem": "Ponto indisponível nessa janela."}
         return {"disponivel": True, "mensagem": "Ponto disponível na janela informada."}
+    

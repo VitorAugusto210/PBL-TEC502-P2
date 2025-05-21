@@ -3,7 +3,7 @@ import random
 import string
 from gerar_rota import gerar_rota_autonoma
 
-def gerar_id_carro():
+def gerar_id_carro(): # gera id aleatorio para o carro
     return "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
 
 def main():

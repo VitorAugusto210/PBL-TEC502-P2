@@ -1,14 +1,13 @@
 from datetime import datetime, timedelta
 from geopy.distance import geodesic
 
-# 👇 Base de capitais com empresa e ponto associado
+# geolocalizacao de capitais com empresa e pontos associados a ela
 CAPITAIS_BRASIL = [
     {"cidade": "João Pessoa", "latitude": -7.115, "longitude": -34.8641, "empresa": "empresa_c", "ponto_id": "jp01"},
     {"cidade": "Recife", "latitude": -8.0476, "longitude": -34.877, "empresa": "empresa_b", "ponto_id": "pe01"},
     {"cidade": "Maceió", "latitude": -9.6659, "longitude": -35.735, "empresa": "empresa_b", "ponto_id": "mc01"},
     {"cidade": "Aracaju", "latitude": -10.9472, "longitude": -37.0731, "empresa": "empresa_b", "ponto_id": "aj01"},
     {"cidade": "Salvador", "latitude": -12.9718, "longitude": -38.5011, "empresa": "empresa_b", "ponto_id": "sv01"},
-    # ... Adicione mais capitais aqui
 ]
 
 def encontrar_cidade(nome):
@@ -18,7 +17,7 @@ def encontrar_cidade(nome):
     return None
 
 def calcular_autonomia_km(bateria_percentual):
-    return (bateria_percentual / 100) * 400  # Ex: 100% = 400 km
+    return (bateria_percentual / 100) * 400  # 100% = 400 km
 
 def gerar_rota_autonoma(origem_nome, destino_nome, carro_id="carro123", bateria_inicial=100):
     origem = encontrar_cidade(origem_nome)

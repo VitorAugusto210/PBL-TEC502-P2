@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 import requests
+from .gerar_todas_rotas import gerar_todas_rotas  
 
 router = APIRouter()
 empresa = None
@@ -9,6 +10,11 @@ def set_empresa(e):
     global empresa
     empresa = e
 
+class RotasRequest(BaseModel):
+    origem: str
+    destino: str
+    carro_id: str
+    autonomia_km: float = 400
 class ReservaRequest(BaseModel):
     carro_id: str
     ponto_id: str
@@ -81,3 +87,18 @@ def cancelar_reserva(req: CancelarRequest):
 @router.post("/disponibilidade")
 def consultar_disponibilidade(req: DisponibilidadeRequest):
     return empresa.verificar_disponibilidade(req.ponto_id, req.janela_inicio, req.janela_fim)
+
+@router.get("/reservas/carro/{carro_id}")
+def reservas_por_carro(carro_id: str):
+    return [
+        r for r in empresa.consultar_reservas()
+        if r["carro_id"] == carro_id
+    ]
+
+@router.post("/rotas-disponiveis")
+def listar_rotas_possiveis(req: RotasRequest):
+    try:
+        rotas = gerar_todas_rotas(req.origem, req.destino, req.carro_id, req.autonomia_km)
+        return {"rotas": rotas}
+    except Exception as e:
+        return {"erro": str(e)}
