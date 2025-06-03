@@ -15,48 +15,85 @@ services:
 
   empresa_a:
     build:
-      context: ./empresa_a
+      context: ./empresa # O contexto de build agora é o diretório "empresa"
+      dockerfile: Dockerfile     # Aponta para o Dockerfile dentro de ./empresa
     container_name: empresa_a
     ports:
       - "8000:8000"
     volumes:
-      - ./empresa_a:/app
+      - ./empresa/app:/app # Monta o código da aplicação de ./empresa/app
     environment:
       - EMPRESA_NOME=Empresa A
       - EMPRESA_LOCAL=João Pessoa
       - EMPRESA_PONTOS=["JP1", "MC1"]
+      - PYTHONUNBUFFERED=1
+      # - GANACHE_URL=http://ganache:8545
+      # - CONTRACT_ADDRESS=0x...
+      # - PRIVATE_KEY_EMPRESA_A=0x... # Chave para assinar transações, se necessário
     networks:
       - rede_eletrica
+    depends_on:
+      - mosquitto
+      # - ganache # Se você adicionar um serviço Ganache
 
   empresa_b:
     build:
-      context: ./empresa_b
+      context: ./empresa
+      dockerfile: Dockerfile
     container_name: empresa_b
     ports:
       - "8001:8000"
     volumes:
-      - ./empresa_b:/app
+      - ./empresa/app:/app
     environment:
       - EMPRESA_NOME=Empresa B
       - EMPRESA_LOCAL=Maceió
       - EMPRESA_PONTOS=["MC2", "SE1"]
+      - PYTHONUNBUFFERED=1
+      # - GANACHE_URL=http://ganache:8545
+      # - CONTRACT_ADDRESS=0x...
+      # - PRIVATE_KEY_EMPRESA_B=0x...
     networks:
       - rede_eletrica
+    depends_on:
+      - mosquitto
+      # - ganache
 
   empresa_c:
     build:
-      context: ./empresa_c
+      context: ./empresa
+      dockerfile: Dockerfile
     container_name: empresa_c
     ports:
       - "8002:8000"
     volumes:
-      - ./empresa_c:/app
+      - ./empresa/app:/app
     environment:
       - EMPRESA_NOME=Empresa C
       - EMPRESA_LOCAL=Sergipe
       - EMPRESA_PONTOS=["SE2", "FS1"]
+      - PYTHONUNBUFFERED=1
+      # - GANACHE_URL=http://ganache:8545
+      # - CONTRACT_ADDRESS=0x...
+      # - PRIVATE_KEY_EMPRESA_C=0x...
     networks:
       - rede_eletrica
+    depends_on:
+      - mosquitto
+      # - ganache
+
+  # Adicione o serviço Ganache/Blockchain aqui, se você estiver usando um container para ele
+  # ganache:
+  #   image: trufflesuite/ganache-cli:latest
+  #   container_name: ganache
+  #   ports:
+  #     - "8545:8545"
+  #   networks:
+  #     - rede_eletrica
+  #   # Exemplo de como passar o ABI e o endereço do contrato para os serviços das empresas
+  #   # volumes:
+  #   #  - ./blockchain/build/contracts/LedgerRecarga.json:/usr/src/app/LedgerRecarga.json # Para que o deploy script possa usar
+  #   # command: ganache-cli --host 0.0.0.0 --db /data/ganache_db -m "sua frase mnemonica" --networkId 5777
 
   carro1:
     build:
@@ -67,6 +104,7 @@ services:
       - empresa_b
       - empresa_c
       - mosquitto
+      # - ganache
     environment:
       - PYTHONUNBUFFERED=1
     stdin_open: true
