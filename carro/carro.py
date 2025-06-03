@@ -1,38 +1,73 @@
-import requests
+import json
 import random
 import string
-from gerar_rota import gerar_rota_autonoma
+import time
+import paho.mqtt.client as mqtt
 
-def gerar_id_carro():
-    return "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+carro_id = "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+BROKER = "broker"
+PORT = 1883
+TOPIC_PUB = "carros/solicitacao"
+TOPIC_SUB = f"carros/{carro_id}/rota"
 
-def main():
-    carro_id = gerar_id_carro()
-    print(f"🆔 ID do carro: {carro_id}")
+rota_recebida = None
 
+def on_connect(client, userdata, flags, rc):
+    print(f"[{carro_id}] Conectado ao broker (código {rc})")
+    client.subscribe(TOPIC_SUB)
+
+def on_message(client, userdata, msg):
+    global rota_recebida
+    print(f"[{carro_id}] Rota recebida!")
+    try:
+        rota_recebida = json.loads(msg.payload.decode())
+    except Exception as e:
+        print(f"Erro ao decodificar a rota: {e}")
+
+client = mqtt.Client(carro_id)
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(BROKER, PORT)
+client.loop_start()
+
+try:
     origem = input("🚗 Origem (ex: João Pessoa): ").strip()
     destino = input("🎯 Destino (ex: Aracaju): ").strip()
     bateria = int(input("🔋 Bateria inicial (0-100): ").strip())
 
-    try:
-        rota, empresa_origem = gerar_rota_autonoma(origem, destino, carro_id, bateria)
-        print("\n📦 Rota planejada com base na bateria:")
-        for p in rota:
+    mensagem = {
+        "id": carro_id,
+        "origem": origem,
+        "destino": destino,
+        "bateria": bateria
+    }
+
+    print(f"[{carro_id}] Enviando solicitação de rota...")
+    client.publish(TOPIC_PUB, json.dumps(mensagem))
+
+    timeout = 5 
+    esperado = time.time() + timeout
+
+    while rota_recebida is None and time.time() < esperado:
+        time.sleep(0.5)
+
+    if rota_recebida is None:
+        print("❌ Tempo excedido aguardando a rota.")
+    else:
+        print("\n📦 Rota recebida:")
+        for p in rota_recebida:
             print(p)
 
         confirmar = input("\nDeseja reservar esta rota? (s/n): ").strip().lower()
         if confirmar != 's':
-            print("🚫 Cancelado.")
-            return
-
-        response = requests.post(f"http://{empresa_origem}:8000/rota", json=rota)
-        if response.status_code == 200:
-            print("✅ Rota reservada com sucesso!")
+            print("🚫 Reserva cancelada.")
         else:
-            print(f"❌ Falha na reserva: {response.status_code} - {response.text}")
+            print("✅ (Simulação) Rota confirmada com sucesso!")
 
-    except Exception as e:
-        print("❌ Erro:", e)
+except Exception as e:
+    print(f"❌ Erro inesperado: {e}")
 
-if __name__ == "__main__":
-    main()
+finally:
+    client.loop_stop()
+    client.disconnect()
+    print(f"[{carro_id}] Conexão encerrada.")
