@@ -4,3 +4,4 @@ pydantic
 requests  
 httpx
 geopy
+web3
