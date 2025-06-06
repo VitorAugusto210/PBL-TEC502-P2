@@ -1,6 +1,7 @@
 from web3 import Web3
 from datetime import datetime, timezone
 import os
+from solcx import compile_standard, install_solc
 
 # ======== CONFIGURAÇÃO DE CONEXÃO ========
 
@@ -72,5 +73,26 @@ def main():
     reserva = consultar_reserva(contrato, 0)
     print("Reserva consultada:", reserva)
 
-if __name__ == "__main__":
-    main()
+def get_session_details(session_id):
+    """Consulta os detalhes de uma sessão de recarga no blockchain."""
+    print(f"\nConsultando detalhes da Sessão ID: {session_id} no blockchain...")
+    try:
+        session_data = contract.functions.getSession(int(session_id)).call()
+        print("Detalhes recebidos:")
+        print(f"  - Usuário: {session_data[0]}")
+        print(f"  - ID da Estação: {session_data[1]}")
+        print(f"  - Início (Timestamp): {session_data[2]}")
+        print(f"  - Fim (Timestamp): {session_data[3]}")
+        print(f"  - Energia Consumida (Wh): {session_data[4]}")
+        print(f"  - Custo (Wei): {session_data[5]}")
+        print(f"  - Foi Pago? {'Sim' if session_data[6] else 'Não'}")
+    except Exception as e:
+        print(f"Erro ao consultar a sessão: {e}")
+
+if __name__ == '__main__':
+    # Permite chamar a função pela linha de comando
+    import sys
+    if len(sys.argv) > 2 and sys.argv[1] == 'get_session':
+        get_session_details(sys.argv[2])
+    else:
+        print("Uso: python interact.py get_session <session_id>")

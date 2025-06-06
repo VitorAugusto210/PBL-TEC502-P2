@@ -11,23 +11,22 @@ services:
 
   # --- BLOCKCHAIN (LEDGER) ---
   ganache:
-    # --- CORREÇÃO APLICADA AQUI ---
-    # 1. Voltamos a usar a imagem oficial que contém o ganache-cli.
     image: trufflesuite/ganache-cli:latest
-    # 2. Removemos a diretiva 'build', pois não estamos mais construindo esta imagem.
     command: ganache-cli -h 0.0.0.0 --db /ganache-data --deterministic
     ports:
-      - "7545:8545"
-        
+      - "7545:8545" # Expõe a porta 8545 interna como 7545 na sua máquina
+
   # --- SCRIPT DE DEPLOY DO SMART CONTRACT ---
   blockchain_deployer:
     build: ./blockchain
     depends_on:
-      - ganache # Apenas depende que o contêiner do ganache inicie. O script deploy.py vai esperar ele ficar pronto.
+      - ganache
     volumes:
       - ./blockchain:/app/
     environment:
-      - BLOCKCHAIN_PROVIDER_URL=http://ganache:7545
+      # --- CORREÇÃO APLICADA AQUI ---
+      # A comunicação interna deve usar a porta 8545
+      - BLOCKCHAIN_PROVIDER_URL=http://ganache:8545
     command: python scripts/deploy.py
 
   # --- SERVIÇOS DAS EMPRESAS ---
@@ -41,9 +40,11 @@ services:
       - "8001:8000"
     depends_on:
       blockchain_deployer:
-        condition: service_completed_successfully # Espera o deploy do contrato terminar com sucesso.
+        condition: service_completed_successfully
     environment:
-      - BLOCKCHAIN_PROVIDER_URL=http://ganache:7545
+      # --- CORREÇÃO APLICADA AQUI ---
+      # A comunicação interna deve usar a porta 8545
+      - BLOCKCHAIN_PROVIDER_URL=http://ganache:8545
     healthcheck: &api-healthcheck
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 5s

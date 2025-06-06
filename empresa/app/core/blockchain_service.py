@@ -1,47 +1,81 @@
-# /empresa/app/core/blockchain_service.py
-
 import json
 import os
 from web3 import Web3
-from web3.middleware import geth_poa_middleware # Para redes PoA como Ganache
-from hexbytes import HexBytes # Para lidar com o tx_hash de forma consistente
-
-# --- Configurações Lidas de Variáveis de Ambiente ---
-# Estas serão definidas no seu docker-compose.yml para cada serviço de empresa
-BLOCKCHAIN_NODE_URL = os.getenv("GANACHE_URL", "http://localhost:8545")
-# O endereco do contrato implantado. Sera diferente para cada deploy.
-CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
-# Caminho para o arquivo JSON do ABI gerado pela compilacao do smart contract
-ABI_FILE_PATH = os.getenv("ABI_FILE_PATH", "/app/blockchain_build/LedgerRecarga.json")
-# A chave privada da conta Ethereum que esta empresa usara para assinar transacoes.
-# CADA EMPRESA DEVE TER SUA PROPRIA CHAVE PRIVADA EM UM AMBIENTE REAL/SEGURO.
-# Para desenvolvimento, pode ser uma das chaves fornecidas pelo Ganache.
-COMPANY_ACCOUNT_PRIVATE_KEY = os.getenv("COMPANY_PRIVATE_KEY")
-
-
+import time
+from web3.middleware import ExtraDataToPOAMiddleware
 class BlockchainService:
     def __init__(self):
-        if not BLOCKCHAIN_NODE_URL:
-            raise ValueError("GANACHE_URL (URL do no blockchain) nao configurado.")
-        if not CONTRACT_ADDRESS:
-            raise ValueError("CONTRACT_ADDRESS (Endereco do Contrato) nao configurado.")
-        if not ABI_FILE_PATH:
-            raise ValueError("ABI_FILE_PATH (Caminho para o ABI do Contrato) nao configurado.")
+        self.provider_url = os.environ.get("BLOCKCHAIN_PROVIDER_URL", "http://ganache:8545")
+        self.w3 = self._connect_with_retry()
 
-        self.web3 = Web3(Web3.HTTPProvider(BLOCKCHAIN_NODE_URL))
+        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
-        # Middleware para compatibilidade com redes Proof-of-Authority (PoA) como o Ganache
-        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        contract_address_path = "./blockchain/scripts/contract_address.txt"
+        abi_path = "./blockchain/scripts/abi.json"
+        
+        self._wait_for_file(contract_address_path)
+        with open(contract_address_path, 'r') as f:
+            self.contract_address = f.read().strip()
 
-        if not self.web3.is_connected():
-            raise ConnectionError(
-                f"Nao foi possivel conectar ao no blockchain em {BLOCKCHAIN_NODE_URL}"
-            )
+        self._wait_for_file(abi_path)
+        with open(abi_path, 'r') as f:
+            self.abi = json.load(f)
+            
+        self.contract = self.w3.eth.contract(address=self.contract_address, abi=self.abi)
+        self.w3.eth.default_account = self.w3.eth.accounts[0]
+        print(f"BlockchainService inicializado. Conectado a {self.provider_url}, contrato em {self.contract_address}")
 
-        self.contract_abi = self._load_abi()
-        self.contract = self.web3.eth.contract(
-            address=CONTRACT_ADDRESS, abi=self.contract_abi
-        )
+    def _connect_with_retry(self, timeout=60):
+        print(f"Tentando conectar ao blockchain em {self.provider_url}...")
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                w3 = Web3(Web3.HTTPProvider(self.provider_url))
+                if w3.is_connected():
+                    print("Conexão com o blockchain estabelecida.")
+                    return w3
+            except Exception as e:
+                print(f"Falha na conexão, tentando novamente... Erro: {e}")
+            time.sleep(2)
+        raise ConnectionError(f"Não foi possível conectar ao blockchain em {self.provider_url} após {timeout} segundos.")
 
-        if COMPANY_ACCOUNT_PRIVATE_KEY:
-            self.account
+    def _wait_for_file(self, filepath, timeout=30):
+        start_time = time.time()
+        while not os.path.exists(filepath):
+            if time.time() - start_time > timeout:
+                raise FileNotFoundError(f"Arquivo {filepath} não encontrado após {timeout} segundos.")
+            time.sleep(1)
+
+    def create_reservation(self, user_address: str, station_id: int):
+        tx_hash = self.contract.functions.createReservation(
+            Web3.to_checksum_address(user_address), 
+            station_id
+        ).transact({'from': self.w3.eth.default_account})
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        
+        event = self.contract.events.ReservationCreated().process_receipt(receipt)
+        session_id = event[0]['args']['sessionId']
+        return session_id
+
+    def finish_recharge(self, session_id: int, energy_consumed: int, cost: int):
+        tx_hash = self.contract.functions.finishRecharge(
+            session_id, 
+            energy_consumed, 
+            cost
+        ).transact({'from': self.w3.eth.default_account})
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        return True
+
+    def make_payment(self, session_id: int, value_wei: int):
+        tx_hash = self.contract.functions.makePayment(session_id).transact({
+            'from': self.w3.eth.default_account,
+            'value': value_wei
+        })
+        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        return True
+
+    def get_session(self, session_id: int):
+        return self.contract.functions.getSession(session_id).call()
+
+# --- LINHA PROBLEMÁTICA REMOVIDA DAQUI ---
+# blockchain_service = BlockchainService()
