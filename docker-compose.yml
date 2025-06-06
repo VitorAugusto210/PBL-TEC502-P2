@@ -1,93 +1,85 @@
-version: '3.9'
+version: '3.8'
 
 services:
+  # --- BROKER MQTT ---
   mosquitto:
     image: eclipse-mosquitto:latest
-    container_name: mosquitto
     ports:
       - "1883:1883"
     volumes:
       - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
-    networks:
-      - rede_eletrica
 
-  empresa_a:
-    build:
-      context: ./empresa_a
-    container_name: empresa_a
+  # --- BLOCKCHAIN (LEDGER) ---
+  ganache:
+    image: trufflesuite/ganache-cli:latest
+    command: ganache-cli -h 0.0.0.0 --db /ganache-data --deterministic
     ports:
-      - "8000:8000"
-    volumes:
-      - ./empresa_a:/app
-    environment:
-      - EMPRESA_NOME=Empresa A
-      - EMPRESA_LOCAL=João Pessoa
-      - EMPRESA_PONTOS=["JP1", "MC1"]
-    networks:
-      - rede_eletrica
+      - "7545:8545" # Expõe a porta 8545 interna como 7545 na sua máquina
 
-  empresa_b:
-    build:
-      context: ./empresa_b
-    container_name: empresa_b
+  # --- SCRIPT DE DEPLOY DO SMART CONTRACT ---
+  blockchain_deployer:
+    build: ./blockchain
+    depends_on:
+      - ganache
+    volumes:
+      - ./blockchain:/app/
+    environment:
+      # --- CORREÇÃO APLICADA AQUI ---
+      # A comunicação interna deve usar a porta 8545
+      - BLOCKCHAIN_PROVIDER_URL=http://ganache:8545
+    command: python scripts/deploy.py
+
+  # --- SERVIÇOS DAS EMPRESAS ---
+  empresa_a: &empresa-template
+    build: ./empresa
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./empresa/app:/app/app
+      - ./blockchain/scripts:/app/blockchain/scripts
     ports:
       - "8001:8000"
-    volumes:
-      - ./empresa_b:/app
+    depends_on:
+      blockchain_deployer:
+        condition: service_completed_successfully
     environment:
-      - EMPRESA_NOME=Empresa B
-      - EMPRESA_LOCAL=Maceió
-      - EMPRESA_PONTOS=["MC2", "SE1"]
-    networks:
-      - rede_eletrica
+      # --- CORREÇÃO APLICADA AQUI ---
+      # A comunicação interna deve usar a porta 8545
+      - BLOCKCHAIN_PROVIDER_URL=http://ganache:8545
+    healthcheck: &api-healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
-  empresa_c:
-    build:
-      context: ./empresa_c
-    container_name: empresa_c
+  empresa_b:
+    <<: *empresa-template
     ports:
       - "8002:8000"
-    volumes:
-      - ./empresa_c:/app
-    environment:
-      - EMPRESA_NOME=Empresa C
-      - EMPRESA_LOCAL=Sergipe
-      - EMPRESA_PONTOS=["SE2", "FS1"]
-    networks:
-      - rede_eletrica
 
-  carro1:
-    build:
-      context: ./carro
-    container_name: carro1
-    depends_on:
-      - empresa_a
-      - empresa_b
-      - empresa_c
-      - mosquitto
-    environment:
-      - PYTHONUNBUFFERED=1
-    stdin_open: true
-    tty: true
-    networks:
-      - rede_eletrica
+  empresa_c:
+    <<: *empresa-template
+    ports:
+      - "8003:8000"
 
+  # --- SIMULADOR DE CENÁRIOS ---
   simulador:
-    build:
-      context: ./carro
-    container_name: simulador
-    depends_on:
-      - empresa_a
-      - empresa_b
-      - empresa_c
-      - mosquitto
-    environment:
-      - PYTHONUNBUFFERED=1
+    build: ./carro
     command: python simulador_carros.py
-    networks:
-      - rede_eletrica
+    depends_on:
+      empresa_a:
+        condition: service_healthy
+      empresa_b:
+        condition: service_healthy
+      empresa_c:
+        condition: service_healthy
+    environment:
+      - EMPRESA_A_URL=http://empresa_a:8000
+      - EMPRESA_B_URL=http://empresa_b:8000
+      - EMPRESA_C_URL=http://empresa_c:8000
 
-networks:
-  rede_eletrica:
+  # --- CARRO INDIVIDUAL (CLIENTE MQTT) ---
+  carro1:
+    build: ./carro
+    command: python carro.py
+    depends_on:
+      - mosquitto

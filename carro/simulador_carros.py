@@ -1,40 +1,109 @@
-import random
-import string
-import time
 import requests
-from datetime import datetime
-from gerar_rota import gerar_rota_autonoma, CAPITAIS_BRASIL  # importar sua base e função
+import time
+import random
+import os
 
-def gerar_id_carro():
-    return "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
+# --- CORREÇÃO APLICADA AQUI ---
+# O script agora lê a URL da variável de ambiente.
+# Se a variável não existir (rodando localmente), ele usa 'localhost' com a porta correspondente.
+EMPRESAS = {
+    "empresa_a": os.getenv("EMPRESA_A_URL", "http://localhost:8001"),
+    "empresa_b": os.getenv("EMPRESA_B_URL", "http://localhost:8002"),
+    "empresa_c": os.getenv("EMPRESA_C_URL", "http://localhost:8003"),
+}
 
-def escolher_cidades():
-    cidades = random.sample(CAPITAIS_BRASIL, 2)
-    return cidades[0]["cidade"], cidades[1]["cidade"]
+# Escolhe uma empresa aleatoriamente para a simulação
+NOME_EMPRESA, EMPRESA_API_URL = random.choice(list(EMPRESAS.items()))
 
-def simular_carro():
-    carro_id = gerar_id_carro()
-    origem, destino = escolher_cidades()
 
-    print(f"\n🚗 {carro_id} vai de {origem} para {destino}")
-
+def fazer_reserva(user_address, station_id):
+    """Faz a reserva de um ponto de recarga."""
+    print(f"Tentando fazer reserva em {EMPRESA_API_URL}/reserva...")
     try:
-        rota_json, empresa_origem = gerar_rota_autonoma(origem, destino, carro_id)
-        url_rota = f"http://{empresa_origem}:8000/rota"
-        response = requests.post(url_rota, json=rota_json)
+        response = requests.post(f"{EMPRESA_API_URL}/reserva", json={
+            "user_address": user_address,
+            "station_id": station_id
+        }, timeout=10)
+        response.raise_for_status()
+        print(f"Reserva para {user_address} na {NOME_EMPRESA} (posto {station_id}) realizada com sucesso.")
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao fazer reserva: {e}")
+        return None
 
-        if response.status_code == 200:
-            print(f"✅ [{carro_id}] Rota reservada com sucesso")
-        else:
-            print(f"❌ [{carro_id}] Falha na reserva: {response.status_code} - {response.text}")
+def finalizar_recarga(session_id, energy, cost):
+    """Informa a finalização da recarga."""
+    print(f"Finalizando recarga para sessão {session_id} em {EMPRESA_API_URL}/finalizar-recarga...")
+    try:
+        response = requests.post(f"{EMPRESA_API_URL}/finalizar-recarga", json={
+            "session_id": session_id,
+            "energy_consumed": energy,
+            "cost": cost
+        }, timeout=10)
+        response.raise_for_status()
+        print(f"Sessão {session_id}: Recarga finalizada com {energy}Wh ao custo de {cost} Wei.")
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao finalizar recarga: {e}")
+        return None
 
-    except Exception as e:
-        print(f"❌ [{carro_id}] Erro: {e}")
+def fazer_pagamento(session_id, cost):
+    """Realiza o pagamento da recarga."""
+    print(f"Realizando pagamento para sessão {session_id} em {EMPRESA_API_URL}/pagamento...")
+    try:
+        response = requests.post(f"{EMPRESA_API_URL}/pagamento", json={
+            "session_id": session_id,
+            "value": cost
+        }, timeout=10)
+        response.raise_for_status()
+        print(f"Sessão {session_id}: Pagamento de {cost} Wei realizado.")
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao realizar pagamento: {e}")
+        return None
 
-def loop_simulacao(tempo=10):
-    while True:
-        simular_carro()
-        time.sleep(tempo)
+
+def simular_carro(carro_id):
+    """Simula o comportamento de um carro."""
+    user_addresses = [
+        "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+        "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
+        "0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b"
+    ]
+    
+    user_address = random.choice(user_addresses)
+    station_id = random.randint(1, 100)
+    
+    print(f"Carro {carro_id} (Usuário: {user_address[:10]}...) iniciando simulação na empresa '{NOME_EMPRESA}'...")
+
+    # 1. Fazer reserva
+    reserva_info = fazer_reserva(user_address, station_id)
+    if not reserva_info or "session_id" not in reserva_info:
+        print(f"Carro {carro_id}: Falha ao obter ID da sessão. Abortando.")
+        return
+        
+    session_id = reserva_info["session_id"]
+    print(f"Carro {carro_id}: Reserva confirmada. ID da Sessão: {session_id}")
+    
+    # Simula tempo de viagem e recarga
+    print(f"Carro {carro_id}: Viajando para o posto de recarga...")
+    time.sleep(3)
+    print(f"Carro {carro_id}: Chegou ao destino e iniciou a recarga.")
+    time.sleep(5)
+
+    # 3. Finalizar recarga e pagar
+    energia_consumida = random.randint(1000, 5000)
+    custo_wei = energia_consumida * 100 
+    
+    finalizar_recarga(session_id, energia_consumida, custo_wei)
+    time.sleep(1)
+    fazer_pagamento(session_id, custo_wei)
+
+    print(f"\n--- Simulação para Carro {carro_id} concluída com sucesso! ---\n")
 
 if __name__ == "__main__":
-    loop_simulacao(tempo=15)
+    print("Iniciando simulação dos carros...")
+    # Simula 3 carros para testar
+    for i in range(3):
+        simular_carro(i + 1)
+        time.sleep(2)

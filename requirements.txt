@@ -4,3 +4,5 @@ pydantic
 requests  
 httpx
 geopy
+web3
+paho-mqtt
