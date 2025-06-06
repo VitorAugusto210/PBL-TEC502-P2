@@ -1,3 +1,5 @@
+from blockchain import registrar_transacao
+
 class Empresa:
     def __init__(self, nome, localizacao, pontos):
         self.nome = nome
@@ -20,6 +22,7 @@ class Empresa:
             "janela_fim": janela_fim
         }
         self.reservas.append(reserva)
+        registrar_transacao("reserva", self.nome, ponto_id)
         return {
             "mensagem": f"[{self.nome}] Reserva confirmada para o carro {carro_id} no ponto {ponto_id}."
         }

@@ -8,143 +8,79 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "uint256",
-				"name": "idReserva",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "carroId",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "pontoId",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "empresaId",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "janelaInicio",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "janelaFim",
+				"name": "sessionId",
 				"type": "uint256"
 			}
 		],
-		"name": "ReservaRegistrada",
+		"name": "PaymentMade",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "sessionId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "energyConsumed",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "cost",
+				"type": "uint256"
+			}
+		],
+		"name": "RechargeFinished",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "sessionId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "stationId",
+				"type": "uint256"
+			}
+		],
+		"name": "ReservationCreated",
 		"type": "event"
 	},
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "_idReserva",
-				"type": "uint256"
-			}
-		],
-		"name": "getReserva",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "idReserva",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "carroId",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "pontoId",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "empresaId",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "janelaInicio",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "janelaFim",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "existe",
-						"type": "bool"
-					}
-				],
-				"internalType": "struct LedgerRecarga.Reserva",
-				"name": "",
-				"type": "tuple"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "proximoIdReserva",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_carroId",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_pontoId",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_empresaId",
-				"type": "string"
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
 			},
 			{
 				"internalType": "uint256",
-				"name": "_janelaInicio",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_janelaFim",
+				"name": "_stationId",
 				"type": "uint256"
 			}
 		],
-		"name": "registrarReserva",
+		"name": "createReservation",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -159,45 +95,148 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "_sessionId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_energyConsumed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_cost",
 				"type": "uint256"
 			}
 		],
-		"name": "reservas",
+		"name": "finishRecharge",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_sessionId",
+				"type": "uint256"
+			}
+		],
+		"name": "getSession",
 		"outputs": [
 			{
-				"internalType": "uint256",
-				"name": "idReserva",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "carroId",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "pontoId",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "empresaId",
-				"type": "string"
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			},
 			{
 				"internalType": "uint256",
-				"name": "janelaInicio",
+				"name": "",
 				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
-				"name": "janelaFim",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
 				"type": "uint256"
 			},
 			{
 				"internalType": "bool",
-				"name": "existe",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_sessionId",
+				"type": "uint256"
+			}
+		],
+		"name": "makePayment",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextSessionId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "sessions",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stationId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "startTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "endTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "energyConsumed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "cost",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isPaid",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "exists",
 				"type": "bool"
 			}
 		],

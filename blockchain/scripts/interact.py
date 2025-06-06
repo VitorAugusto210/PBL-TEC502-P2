@@ -1,6 +1,6 @@
-import json
 from web3 import Web3
 from datetime import datetime, timezone
+import os
 
 # ======== CONFIGURAÇÃO DE CONEXÃO ========
 
@@ -19,13 +19,19 @@ def conectar_ganache():
 
 # ======== UTILITÁRIOS DE ARQUIVO ========
 
-def carregar_abi(path='abi.json'):
+def carregar_abi():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(script_dir, "abi.json")
+
     with open(path, 'r') as f:
-        return json.load(f)
+        return f.read()
 
 def carregar_bytecode(path='bytecode.txt'):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(script_dir, "bytecode.txt")
+
     with open(path, 'r') as f:
-        return f.read().strip()
+        return f.read()
 
 # ======== OPERAÇÕES COM CONTRATO ========
 

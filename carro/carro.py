@@ -1,73 +1,55 @@
-import json
-import random
-import string
+import os
 import time
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import CallbackAPIVersion, MQTTMessage
 
-carro_id = "carro_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-BROKER = "broker"
-PORT = 1883
-TOPIC_PUB = "carros/solicitacao"
-TOPIC_SUB = f"carros/{carro_id}/rota"
-
-rota_recebida = None
-
-def on_connect(client, userdata, flags, rc):
-    print(f"[{carro_id}] Conectado ao broker (código {rc})")
-    client.subscribe(TOPIC_SUB)
-
-def on_message(client, userdata, msg):
-    global rota_recebida
-    print(f"[{carro_id}] Rota recebida!")
-    try:
-        rota_recebida = json.loads(msg.payload.decode())
-    except Exception as e:
-        print(f"Erro ao decodificar a rota: {e}")
-
-client = mqtt.Client(carro_id)
-client.on_connect = on_connect
-client.on_message = on_message
-client.connect(BROKER, PORT)
-client.loop_start()
-
-try:
-    origem = input("🚗 Origem (ex: João Pessoa): ").strip()
-    destino = input("🎯 Destino (ex: Aracaju): ").strip()
-    bateria = int(input("🔋 Bateria inicial (0-100): ").strip())
-
-    mensagem = {
-        "id": carro_id,
-        "origem": origem,
-        "destino": destino,
-        "bateria": bateria
-    }
-
-    print(f"[{carro_id}] Enviando solicitação de rota...")
-    client.publish(TOPIC_PUB, json.dumps(mensagem))
-
-    timeout = 5 
-    esperado = time.time() + timeout
-
-    while rota_recebida is None and time.time() < esperado:
-        time.sleep(0.5)
-
-    if rota_recebida is None:
-        print("❌ Tempo excedido aguardando a rota.")
+# --- CORREÇÃO APLICADA AQUI (Assinatura das funções) ---
+# As funções de callback agora usam a assinatura da v2 da API.
+def on_connect(client: mqtt.Client, userdata, flags, rc, properties):
+    """Callback executado ao conectar ao broker."""
+    if rc == 0:
+        client_id = client._client_id.decode()
+        print(f"Carro (ID: {client_id}) conectado ao broker MQTT com sucesso.")
+        # Subscreve a um tópico genérico para receber rotas.
+        client.subscribe("rota/+")
     else:
-        print("\n📦 Rota recebida:")
-        for p in rota_recebida:
-            print(p)
+        print(f"Falha ao conectar ao broker, código de retorno: {rc}")
 
-        confirmar = input("\nDeseja reservar esta rota? (s/n): ").strip().lower()
-        if confirmar != 's':
-            print("🚫 Reserva cancelada.")
-        else:
-            print("✅ (Simulação) Rota confirmada com sucesso!")
-
-except Exception as e:
-    print(f"❌ Erro inesperado: {e}")
-
-finally:
+def on_message(client: mqtt.Client, userdata, msg: MQTTMessage):
+    """Callback executado ao receber uma mensagem."""
+    carro_id = client._client_id.decode()
+    print(f"[{carro_id}] Rota recebida no tópico '{msg.topic}':")
+    print(str(msg.payload.decode()))
     client.loop_stop()
-    client.disconnect()
-    print(f"[{carro_id}] Conexão encerrada.")
+
+def on_disconnect(client: mqtt.Client, userdata, rc, properties):
+    """Callback para quando o cliente se desconecta."""
+    carro_id = client._client_id.decode()
+    print(f"[{carro_id}] Desconectado do broker MQTT.")
+
+if __name__ == "__main__":
+    carro_id = f"carro_{os.getpid()}"
+    
+    # --- CORREÇÃO APLICADA AQUI (Versão da API) ---
+    # Usando a versão 2 da API de Callbacks.
+    client = mqtt.Client(CallbackAPIVersion.VERSION2, carro_id)
+    # ---------------------------------------------
+
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.on_disconnect = on_disconnect
+
+    try:
+        print(f"[{carro_id}] Tentando conectar ao broker MQTT em 'mosquitto:1883'...")
+        client.connect("mosquitto", 1883, 60)
+        client.loop_forever()
+    except ConnectionRefusedError:
+        print(f"[{carro_id}] Erro: Conexão recusada. O broker MQTT está acessível?")
+    except OSError as e:
+        print(f"[{carro_id}] Erro de rede: {e}. Verifique a rede do Docker.")
+    except KeyboardInterrupt:
+        print(f"[{carro_id}] Simulação interrompida pelo usuário.")
+    except Exception as e:
+        print(f"[{carro_id}] Ocorreu um erro inesperado: {e}")
+    finally:
+        client.disconnect()
