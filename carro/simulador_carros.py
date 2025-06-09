@@ -103,6 +103,7 @@ def simular_carro(carro_id):
 
 if __name__ == "__main__":
     print("Iniciando simulação dos carros...")
+    
     # Simula 3 carros para testar
     for i in range(3):
         simular_carro(i + 1)

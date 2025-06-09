@@ -105,9 +105,9 @@ if __name__ == "__main__":
     
     # --- Execute um teste de cada vez para analisar os resultados ---
     
-    teste_1_reserva_dupla()
+    #teste_1_reserva_dupla()
     
     print("\n" + "="*50 + "\n")
     
     # Descomente a linha abaixo para rodar o segundo teste
-    #teste_2_gerenciamento_de_nonce()
+    teste_2_gerenciamento_de_nonce()
