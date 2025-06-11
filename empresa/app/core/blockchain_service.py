@@ -76,6 +76,3 @@ class BlockchainService:
 
     def get_session(self, session_id: int):
         return self.contract.functions.getSession(session_id).call()
-
-# --- LINHA PROBLEMÁTICA REMOVIDA DAQUI ---
-# blockchain_service = BlockchainService()
