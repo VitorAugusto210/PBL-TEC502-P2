@@ -3,7 +3,7 @@ import threading
 import random
 import time
 
-# --- Configuração do Teste ---
+# --- configuração do Teste ---
 NUMERO_DE_REQUISICOES_SIMULTANEAS = 10  # Aumente para simular mais usuários
 
 # URLs dos serviços de empresa expostos no localhost
@@ -13,7 +13,7 @@ URLS_EMPRESAS = [
     "http://localhost:8003",
 ]
 
-# Carteiras de usuários para simulação
+# carteiras de usuários para simulação
 USER_ADDRESSES = [
     "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
     "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
@@ -22,10 +22,10 @@ USER_ADDRESSES = [
     "0xd03ea8624C8C5987235048901fB614fDcA89b117",
 ]
 
-# --- Funções de Teste ---
+# --- funções de Teste ---
 
 def tentar_reservar(thread_id, url_empresa, user_address, station_id):
-    """Função que cada thread executará para tentar fazer uma reserva."""
+    """Cada thread executará para tentar fazer uma reserva."""
     print(f"[Thread {thread_id}] Tentando reservar estação {station_id} na {url_empresa}...")
     try:
         response = requests.post(

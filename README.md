@@ -1,142 +1,172 @@
 
-# ⚡ Recarga Distribuída de Veículos Elétricos
+```markdown
+# ⚡ Sistema de Recarga de Veículos Elétricos baseado em Blockchain
 
-Este projeto apresenta uma arquitetura distribuída para planejamento e execução de **reservas atômicas** em pontos de recarga de veículos elétricos (VEs), cobrindo **múltiplas empresas e estados**. A aplicação simula um ecossistema realista onde empresas diferentes, com sistemas independentes, colaboram para garantir o trajeto completo de um usuário, evitando falhas por indisponibilidade de recarga.
+Este projeto propõe uma solução tecnológica inovadora para a gestão de recarga de veículos elétricos (VEs), utilizando **blockchain privada**, **contratos inteligentes (smart contracts)** e uma arquitetura de **microsserviços**. Ele simula a interação entre empresas de recarga e veículos de forma autônoma, registrando todas as transações de forma imutável e auditável na blockchain Ethereum, por meio da biblioteca **Web3.py**.
 
-## 🎯 Motivação
+---
 
-A adoção de VEs esbarra em desafios como a **ansiedade de autonomia**, causada pela incerteza da disponibilidade de pontos de recarga ao longo de rotas longas. Cada ponto pertence a empresas distintas, exigindo múltiplos cadastros, apps e sistemas incompatíveis.
+## 📘 Motivação e Objetivo
 
-Este sistema resolve o problema permitindo que o usuário, ao iniciar uma viagem, reserve **todos os pontos da rota de forma atômica**, ou seja, **ou todos são garantidos ou nenhum é reservado**, com reversão completa em caso de falha.
+Com o crescimento da mobilidade elétrica, surge a necessidade de sistemas seguros, transparentes e descentralizados para gerenciar a recarga de veículos. A tecnologia **blockchain** oferece um ambiente confiável para esse tipo de aplicação, permitindo:
 
-## 🧱 Arquitetura Geral
+- Registro imutável de transações (reserva, recarga, pagamento)
+- Redução de fraudes
+- Eliminação de intermediários
+- Auditoria completa das operações
 
-- **Simulador de Veículos**: clientes MQTT (Python) publicam mensagens sobre rotas e estado de bateria.
-- **Mosquitto Broker**: gerencia a comunicação MQTT entre veículos e servidores.
-- **Servidores REST (FastAPI)**:
-  - Representam empresas A, B e C
-  - Cada um gerencia seus pontos de recarga e banco de dados local
-  - Comunicação entre si via REST para coordenar reservas distribuídas
-- **Docker Compose**: orquestra todos os componentes em contêineres isolados e interconectados.
+O objetivo deste projeto é construir um **protótipo funcional** que simule esse ecossistema de recarga, demonstrando o potencial da blockchain para garantir a confiabilidade e automação do processo.
 
-## 🔄 Fluxo de Funcionamento
+---
 
-1. Um carro simulado gera uma **rota** com 3 pontos de recarga, um em cada servidor (empresa).
-2. A rota é publicada via MQTT no tópico `veiculo/{id}/requisicao`.
-3. O servidor que recebe a requisição atua como **coordenador** e inicia uma transação distribuída.
-4. Cada ponto é reservado temporariamente (`/reserva-temporaria`).
-5. Se todos os pontos forem reservados com sucesso, o coordenador envia `/confirmar-reserva`.
-6. Se algum falhar, todos recebem `/cancelar-reserva` e desfazem a reserva.
+## 🧩 Arquitetura do Sistema
 
-## 📡 Comunicação
+O sistema é dividido em **três microsserviços principais**, orquestrados via **Docker Compose**:
 
-### MQTT (Carro → Servidor)
-- `veiculo/{id}/status` – status periódico do carro (localização, bateria)
-- `veiculo/{id}/requisicao` – rota solicitada
-- `servidor/{id}/resposta` – resultado da reserva
+### 1. Blockchain Node (Ganache)
+- Blockchain Ethereum privada local
+- Contrato inteligente `ChargePoint.sol` implantado via `deploy.py`
+- Contas pré-financiadas para testes
+- Registra todas as ações de recarga de forma imutável
 
-### REST (Servidor ↔ Servidor)
-Endpoints REST expostos em cada servidor:
-- `GET /disponibilidade`  
-  Retorna os pontos de recarga disponíveis.
+### 2. Serviço da Empresa (API - FastAPI)
+- Fornece endpoints REST para:
+  - Cadastro de empresas
+  - Solicitação de reserva
+  - Início e fim de recarga
+- Interage com o contrato inteligente utilizando Web3.py
+- Responsável por verificar disponibilidade e validar operações
 
-- `POST /reserva-temporaria`  
-  Reserva um ponto de recarga por tempo limitado. Recebe ID da sessão e dados do veículo.
+### 3. Simulador de Carros (Scripts Python)
+- Simula múltiplos veículos elétricos operando em paralelo
+- Gera rotas aleatórias e solicita pontos de recarga
+- Realiza pagamentos diretamente na blockchain
+- Utiliza `carro.py`, `gerar_rota.py` e `consultar_rota_carro.py`
 
-- `POST /confirmar-reserva`  
-  Finaliza a reserva temporária, tornando-a permanente.
+---
 
-- `DELETE /cancelar-reserva`  
-  Cancela a reserva temporária.
+## 📦 Estrutura do Projeto
 
-## 🧪 Protocolo de Reserva Atômica – 2PC
+```
 
-O protocolo **Two-Phase Commit (2PC)** foi implementado para garantir atomicidade nas reservas:
+PBL-TEC502-P2-main/
+├── blockchain/
+│   ├── contracts/               # Contrato ChargePoint.sol
+│   └── scripts/                 # Scripts de deploy e interação com o contrato
+├── carro/
+│   ├── carro.py                 # Simulação dos carros
+│   ├── gerar\_rota.py            # Geração de rotas aleatórias
+│   ├── consultar\_bloco.py       # Auditoria das transações
+│   └── gerar\_historico.py       # Armazena histórico de simulações
+├── empresa/
+│   └── main.py                  # API REST da empresa
+├── docker-compose.yml           # Orquestração dos serviços
+├── requirements.txt             # Dependências Python
+└── README.md
 
-- **Fase 1 – Preparação:**  
-  O coordenador envia a solicitação de reserva temporária para todos os pontos.
+````
 
-- **Fase 2 – Commit ou Rollback:**  
-  Se todos responderem OK, o coordenador envia `commit`.  
-  Caso algum falhe, ele envia `rollback` para todos.
+---
 
-## ⚙️ Tecnologias Utilizadas
+## 🔄 Ciclo de Vida de uma Recarga
 
-| Tecnologia       | Uso                                |
-|------------------|-------------------------------------|
-| Python 3.10+     | Lógica dos servidores e simulador   |
-| FastAPI          | API REST entre empresas             |
-| paho-mqtt        | Cliente MQTT dos carros             |
-| Mosquitto        | Broker MQTT                         |
-| Docker           | Contêineres para cada componente    |
-| Docker Compose   | Orquestração do ambiente completo   |
-| Insomnia/Postman | Testes manuais de API REST          |
+1. **Veículo inicia a simulação** e gera uma rota
+2. **Solicita reserva** em um ponto de recarga via `/reserva/fazer`
+3. **API valida disponibilidade** e registra a reserva no contrato inteligente (`fazerReserva`)
+4. **Veículo chega ao ponto** e inicia a recarga via `/recarga/iniciar`
+5. **Ao finalizar a recarga**, registra a operação com `/recarga/finalizar`
+6. **Pagamento é feito** diretamente na blockchain usando `pagarReserva`
 
-## 📦 Execução
+Todas essas etapas geram **transações blockchain** visíveis e auditáveis.
 
-### Requisitos
-- Docker instalado
-- Docker Compose instalado
+---
 
-### Passos
+## 🧪 Testes e Auditoria
+
+Você pode testar manualmente os endpoints com **Postman** ou inspecionar os registros com:
+
+- `interact.py` – Consulta estados e eventos no contrato
+- `consultar_bloco.py` – Acessa os blocos minerados
+- `historico_simulacao.txt` – Armazena os logs das execuções
+
+---
+
+## 🚀 Como Executar
+
+### Pré-requisitos
+
+- Docker e Docker Compose
+- Python 3.10+ (apenas para testes externos)
+
+### Execução
 
 ```bash
-# Clonar o repositório
-git clone https://github.com/seuusuario/seurepo.git
-cd seurepo
-
-# Subir todo o ambiente
 docker-compose up --build
+````
+
+Após a execução:
+
+* O contrato será automaticamente implantado
+* A API ficará disponível em `http://localhost:8000`
+* Carros serão simulados automaticamente
+
+---
+
+## 📉 Resultados Obtidos
+
+* Sistema funcional, com múltiplos veículos interagindo com a API e blockchain
+* Confirmação de que todas as transações foram registradas de forma imutável
+* Validação do comportamento autônomo e seguro dos contratos inteligentes
+
+Logs típicos:
+
+```
+INFO:carro:Carro CAR-001: Iniciando simulação.
+INFO:carro:Reserva no posto 1 realizada com sucesso.
+INFO:carro:Iniciando recarga no posto 1...
+INFO:carro:Recarga finalizada para o carro CAR-001 no posto 1. Custo: X.XX.
 ```
 
-Acesse os serviços nos seguintes endpoints:
+---
 
-- Empresa A: http://localhost:8001
-- Empresa B: http://localhost:8002
-- Empresa C: http://localhost:8003
+## 🚧 Limitações
 
-## 🛠 Organização do Repositório
+* Simulação simplificada (sem consumo energético real)
+* Rede blockchain com um único nó (Ganache)
+* Ausência de interface gráfica
+* Transações sem custo de gás (por ser ambiente local)
+
+---
+
+## 💡 Trabalhos Futuros
+
+* ✅ Interface gráfica para usuários e operadores
+* ✅ Deploy do contrato em redes públicas (Sepolia, Goerli)
+* ✅ Integração com gateways de pagamento reais
+* ✅ Simulação com consumo de bateria, tráfego e rotas reais
+
+---
+
+## 👥 Equipe
+
+* Fernanda Marinho Silva
+* Mirela Almeida Mascarenhas
+* Vitor Augusto Novaes de Jesus
+
+**UEFS – Universidade Estadual de Feira de Santana**
+Disciplina: TEC502 MI – Projeto de Concorrência e Conectividade
+Professora: Fabíola de Oliveira Pedreira
+
+---
+
+## 📜 Licença
+
+Este projeto é de caráter acadêmico e está sob licença MIT. Uso livre para fins educacionais e de pesquisa.
+
+---
 
 ```
-.
-├── carro/
-│   ├── carro.py                # Inicialização do cliente MQTT
-│   ├── gerar_rota.py           # Geração de rotas fictícias
-│   └── simulador_carros.py     # Lógica principal do simulador
-├── empresa_a/
-│   └── app/
-├── empresa_b/
-│   └── app/
-├── empresa_c/
-│   └── app/
-├── mosquitto/
-│   └── config/
-├── docker-compose.yml
-└── README.md
-```
 
-## 🚗 Simulação de Veículos
+---
 
-Os scripts Python no diretório `carro/` simulam diferentes carros com:
 
-- IDs únicos
-- Rotas de 3 pontos
-- Estado de bateria variável
-- Publicação automática de mensagens MQTT
-
-## 📈 Resultados Esperados
-
-- Reservas 100% atômicas entre empresas com diferentes servidores
-- Rollback distribuído funcional em caso de falha
-- Comunicação MQTT eficiente e assíncrona com feedback para o cliente
-- Sistema modular e escalável com Docker
-
-## 📚 Licença e Autoria
-
-Projeto desenvolvido para a disciplina de Sistemas Distribuídos (TEC502) no LARSID – 2025.  
-Uso acadêmico e educacional.
-
-Autores:  
--  Fernanda Marinho Silva
--  Mirela Almeida Mascarenhas
--  Vitor Augusto Novaes de Jesus

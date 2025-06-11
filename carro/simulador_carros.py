@@ -3,16 +3,12 @@ import time
 import random
 import os
 
-# --- CORREÇÃO APLICADA AQUI ---
-# O script agora lê a URL da variável de ambiente.
-# Se a variável não existir (rodando localmente), ele usa 'localhost' com a porta correspondente.
 EMPRESAS = {
     "empresa_a": os.getenv("EMPRESA_A_URL", "http://localhost:8001"),
     "empresa_b": os.getenv("EMPRESA_B_URL", "http://localhost:8002"),
     "empresa_c": os.getenv("EMPRESA_C_URL", "http://localhost:8003"),
 }
 
-# Escolhe uma empresa aleatoriamente para a simulação
 NOME_EMPRESA, EMPRESA_API_URL = random.choice(list(EMPRESAS.items()))
 
 
@@ -76,7 +72,7 @@ def simular_carro(carro_id):
     
     print(f"Carro {carro_id} (Usuário: {user_address[:10]}...) iniciando simulação na empresa '{NOME_EMPRESA}'...")
 
-    # 1. Fazer reserva
+
     reserva_info = fazer_reserva(user_address, station_id)
     if not reserva_info or "session_id" not in reserva_info:
         print(f"Carro {carro_id}: Falha ao obter ID da sessão. Abortando.")
