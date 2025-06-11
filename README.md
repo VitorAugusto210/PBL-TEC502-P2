@@ -51,13 +51,16 @@ O sistema é dividido em **três microsserviços principais**, orquestrados via 
 
 PBL-TEC502-P2-main/
 ├── blockchain/
+
 │   ├── contracts/               # Contrato ChargePoint.sol
 │   └── scripts/                 # Scripts de deploy e interação com o contrato
+
 ├── carro/
 │   ├── carro.py                 # Simulação dos carros
 │   ├── gerar\_rota.py            # Geração de rotas aleatórias
 │   ├── consultar\_bloco.py       # Auditoria das transações
 │   └── gerar\_historico.py       # Armazena histórico de simulações
+
 ├── empresa/
 │   └── main.py                  # API REST da empresa
 ├── docker-compose.yml           # Orquestração dos serviços
